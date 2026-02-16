@@ -23,7 +23,9 @@ def send_telegram(msg):
     requests.post(url, data=payload)
 
 def check_cisia():
+    send_telegram("سلام! من وصل هستم و دارم تست می‌کنم.")  # <--- این خط را اضافه کن
     print("🚀 شروع بررسی سایت CISIA...")
+    
     
     # تنظیمات مرورگر (Headless برای سرور)
     chrome_options = Options()
@@ -51,10 +53,10 @@ def check_cisia():
             text = row.text.upper()
             
             # شرط مهم: فقط اگر آزمون آنلاین (HOME) بود چک کن
-            if "CENT" in text:
+            if "CENT@HOME" in text:
                 # کلماتی که نشان‌دهنده باز بودن جا هستند
                 # معمولاً در سایت انگلیسی می‌نویسد: "OPEN" یا "AVAILABLE" یا "REGISTER"
-                if "CENTS" in text:  # <--- تغییر موقت برای تست
+                if "AVAILABLE" in text or "OPEN" in text or "REGISTER" in text:
                     found_seats = True
                     # متن ردیف را تمیز می‌کنیم تا در تلگرام خوانا باشد
                     clean_text = text.replace('\n', ' | ')
