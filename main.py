@@ -2,68 +2,75 @@ import os
 import time
 import requests
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
 
-# --- دریافت اطلاعات حساس از تنظیمات گیت‌هاب ---
+# --- دریافت اطلاعات از تنظیمات گیت‌هاب ---
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
-TARGET_URL = "https://example.com/login" # لینک سایت هدف
-BUTTON_TEXT_TO_FIND = "Book"
 
-def send_telegram_alert(message):
+# لینک تقویم CISIA (انگلیسی)
+TARGET_URL = "https://testcisia.it/calendario.php?tolc=cents&lingua=inglese"
+
+def send_telegram(msg):
     if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("❌ توکن تلگرام تنظیم نشده است.")
+        print("❌ توکن تلگرام یا چت آیدی تنظیم نشده است.")
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    data = {"chat_id": CHAT_ID, "text": message}
-    try:
-        requests.post(url, data=data)
-        print("✅ پیام تلگرام ارسال شد.")
-    except Exception as e:
-        print(f"❌ خطا در ارسال پیام: {e}")
+    payload = {"chat_id": CHAT_ID, "text": msg}
+    requests.post(url, data=payload)
 
-def run_check():
-    # تنظیمات مرورگر برای اجرا در سرور (Headless)
+def check_cisia():
+    print("🚀 شروع بررسی سایت CISIA...")
+    
+    # تنظیمات مرورگر (Headless برای سرور)
     chrome_options = Options()
-    chrome_options.add_argument("--headless") # مهم: بدون نمایش گرافیکی
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    # اضافه کردن User-Agent برای اینکه سایت کمتر شک کند ربات هستیم
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     
     try:
-        print("🚀 در حال بررسی سایت...")
         driver.get(TARGET_URL)
-        time.sleep(10) # صبر برای لود کامل (در سرورها اینترنت گاهی کند است)
+        time.sleep(8)  # صبر برای لود شدن جدول جاوااسکریپتی
+        
+        # پیدا کردن تمام ردیف‌های جدول (tr)
+        rows = driver.find_elements(By.TAG_NAME, "tr")
+        
+        found_seats = False
+        message_body = ""
 
-        # --- اگر لاگین نیاز است، اینجا کد لاگین را اضافه کن ---
-        # driver.find_element(By.ID, "username").send_keys("YOUR_USER")
-        # driver.find_element(By.ID, "password").send_keys("YOUR_PASS")
-        # driver.find_element(By.ID, "submit").click()
-        # time.sleep(5)
-        
-        page_source = driver.page_source
-        
-        if BUTTON_TEXT_TO_FIND in page_source:
-            msg = f"🚨 فوری! تایم امتحان باز شد!\nمتن '{BUTTON_TEXT_TO_FIND}' پیدا شد.\nسریع چک کن!"
-            print(msg)
-            send_telegram_alert(msg)
-        else:
-            print("هنوز خبری نیست.")
+        print(f"📊 تعداد ردیف‌های پیدا شده: {len(rows)}")
+
+        for row in rows:
+            text = row.text.upper()
             
+            # شرط مهم: فقط اگر آزمون آنلاین (HOME) بود چک کن
+            if "CENT@HOME" in text:
+                # کلماتی که نشان‌دهنده باز بودن جا هستند
+                # معمولاً در سایت انگلیسی می‌نویسد: "OPEN" یا "AVAILABLE" یا "REGISTER"
+                if "CENTS" in text:  # <--- تغییر موقت برای تست
+                    found_seats = True
+                    # متن ردیف را تمیز می‌کنیم تا در تلگرام خوانا باشد
+                    clean_text = text.replace('\n', ' | ')
+                    message_body += f"✅ {clean_text}\n\n"
+                    print(f"🎉 پیدا شد: {clean_text}")
+
+        if found_seats:
+            final_msg = f"🚨 **ظرفیت CENT@HOME باز شد!** 🚨\n\n{message_body}\n🔗 لینک ثبت‌نام:\n{TARGET_URL}"
+            send_telegram(final_msg)
+        else:
+            print("❌ هیچ جای خالی برای CENT@HOME پیدا نشد.")
+
     except Exception as e:
-        print(f"❌ خطای کلی: {e}")
-        # اختیاری: ارسال خطا به تلگرام تا بفهمی بات کار نمی‌کند
-        # send_telegram_alert(f"بات ارور داد: {str(e)}")
+        print(f"❌ خطا در اجرای بات: {e}")
     finally:
         driver.quit()
 
 if __name__ == "__main__":
-    run_check()
+    check_cisia()
