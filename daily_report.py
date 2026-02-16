@@ -2,7 +2,6 @@ import os
 import requests
 import datetime
 
-# دریافت اطلاعات از گیت‌هاب
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
 
@@ -11,7 +10,6 @@ def send_heartbeat():
         print("❌ توکن یا چت آیدی پیدا نشد.")
         return
 
-    # گرفتن زمان فعلی
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     
     message = (
