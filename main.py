@@ -11,16 +11,25 @@ TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
 TARGET_URL = "https://testcisia.it/calendario.php?tolc=cents&lingua=inglese"
 
-def send_telegram(msg):
-    if not TELEGRAM_TOKEN or not CHAT_ID:
-        print("❌ توکن تلگرام یا چت آیدی تنظیم نشده است.")
-        return
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": msg}
-    requests.post(url, data=payload)
+def send_telegram_photo(caption, photo_path):
+    
+    if not TELEGRAM_TOKEN or not CHAT_ID: return
+    
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+    
+    try:
+        with open(photo_path, "rb") as image_file:
+            files = {"photo": image_file}
+            data = {"chat_id": CHAT_ID, "caption": caption}
+            
+            requests.post(url, data=data, files=files)
+            print("✅ عکس با موفقیت به تلگرام ارسال شد.")
+    except Exception as e:
+        print(f"❌ خطا در ارسال عکس: {e}")
 
 def check_cisia():
-    print("🚀 شروع بررسی سایت CISIA...")    
+    print("🚀 شروع بررسی سایت CISIA...")
+    
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
@@ -32,18 +41,16 @@ def check_cisia():
     
     try:
         driver.get(TARGET_URL)
-        time.sleep(8)  
+        time.sleep(10) 
         
         rows = driver.find_elements(By.TAG_NAME, "tr")
-        
         found_seats = False
         message_body = ""
 
-        print(f"📊 تعداد ردیف‌های پیدا شده: {len(rows)}")
+        print(f"📊 تعداد ردیف‌های جدول: {len(rows)}")
 
         for row in rows:
             text = row.text.upper()
-            
             if "CENT@HOME" in text:
                 if "AVAILABLE" in text or "OPEN" in text or "REGISTER" in text:
                     found_seats = True
@@ -53,12 +60,17 @@ def check_cisia():
 
         if found_seats:
             final_msg = f"🚨 **ظرفیت CENT@HOME باز شد!** 🚨\n\n{message_body}\n🔗 لینک ثبت‌نام:\n{TARGET_URL}"
-            send_telegram(final_msg)
+            
+            screenshot_name = "status.png"
+            driver.save_screenshot(screenshot_name)
+            print("📸 اسکرین‌شات گرفته شد.")
+            
+            send_telegram_photo(final_msg, screenshot_name)
         else:
             print("❌ هیچ جای خالی برای CENT@HOME پیدا نشد.")
 
     except Exception as e:
-        print(f"❌ خطا در اجرای بات: {e}")
+        print(f"❌ خطا: {e}")
     finally:
         driver.quit()
 
