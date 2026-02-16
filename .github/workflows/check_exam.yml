@@ -7,7 +7,7 @@ on:
 
 jobs:
   check-exam:
-    runs-on: ubuntu-latest   # <--- اصلاح شد (با خط تیره)
+    runs-on: ubuntu-latest  
 
     steps:
       - name: Checkout code
