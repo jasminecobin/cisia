@@ -2,12 +2,12 @@ name: Check CISIA CENTS
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # اجرا هر ۱۰ دقیقه
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
   check-exam:
-    runs_on: ubuntu-latest
+    runs-on: ubuntu-latest   # <--- اصلاح شد (با خط تیره)
 
     steps:
       - name: Checkout code
