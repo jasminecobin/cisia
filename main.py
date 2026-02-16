@@ -51,7 +51,7 @@ def check_cisia():
             text = row.text.upper()
             
             # شرط مهم: فقط اگر آزمون آنلاین (HOME) بود چک کن
-            if "CENT@HOME" in text:
+            if "CENT" in text:
                 # کلماتی که نشان‌دهنده باز بودن جا هستند
                 # معمولاً در سایت انگلیسی می‌نویسد: "OPEN" یا "AVAILABLE" یا "REGISTER"
                 if "CENTS" in text:  # <--- تغییر موقت برای تست
